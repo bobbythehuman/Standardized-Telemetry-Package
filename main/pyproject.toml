@@ -1,0 +1,4 @@
+[tool.black]
+line-length = 150
+include = '\.pyi?$'
+force-exclude = '''.*data_structures.*'''
