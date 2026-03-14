@@ -1,5 +1,5 @@
 import socket
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import threading
 from typing import Generator, Tuple, Type, Any, Optional
 
@@ -17,11 +17,6 @@ class CentralStorage:
     via ReadOnlyStorage so they cannot accidentally mutate the contents.
     """
 
-    # _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
-
-    # allData: dict = field(default_factory=dict)
-    # lastestData: dict = field(default_factory=dict)
-
     def __init__(self, MetaData) -> None:
         self._lock = threading.RLock()
 
@@ -35,11 +30,6 @@ class CentralStorage:
                 if packetName not in self.allData:
                     self.allData[packetName] = []
                     self.lastestData[packetName] = None
-
-        # totalPackets = sum(len(packetInfo) for _, packetInfo in packetNames)
-
-        # self.allData = {i: [] for i in range(totalPackets)}
-        # self.lastestData = {i: None for i in range(totalPackets)}
 
     def _write(self, packetID: int, data) -> None:
         """Called only by the network thread."""
@@ -67,7 +57,6 @@ class ReadOnlyStorage:
 
     def __init__(self, storage: CentralStorage) -> None:
         self._storage = storage
-        # self._storage = CentralStorage(MetaData)
 
     def snapshot(self) -> dict[str, Any]:
         return self._storage.snapshot()
@@ -104,7 +93,7 @@ class threadManager:
 
     def addWorkerThread(self, mainFunc):
         self.threadCount += 1
-        # self.readOnlyStorage may need updating when metadata gets updated
+        # readOnlyStorage may need updating when metadata gets updated
         workerThread = threading.Thread(
             target=mainFunc,
             kwargs={"worker_id": self.threadCount, "ro_storage": self.readOnlyStorage, "stop_event": self.stop_event},
@@ -173,12 +162,13 @@ def construct_packet(data: bytes, packetID: int, packetInfo) -> type | None:
             print(f"[Warning]\tReceived data length {len(data)} is less than expected packet buffer size {packetBufferSize} for packet ID {packetID}")
             # raise ValueError(f"Received data length {len(data)} is less than expected packet buffer size {packetBufferSize}")
         elif len(data) > packetBufferSize:
-            print(f"[Warning]\tReceived data length {len(data)} is greater than expected packet buffer size {packetBufferSize} for packet ID {packetID}. Extra data will be ignored.")
+            print(
+                f"[Warning]\tReceived data length {len(data)} is greater than expected packet buffer size {packetBufferSize} for packet ID {packetID}. Extra data will be ignored."
+            )
             # raise ValueError(f"Received data length {len(data)} is greater than expected packet buffer size {packetBufferSize}")
         try:
             rawPacket = packetStruct.from_buffer_copy(data[0:packetBufferSize])
         except ValueError as exc:
-            # print(f"[Error]\tFailed to construct packet using {packetStruct.__name__}: {exc}")
             raise ValueError(f"[Error]\tFailed to construct packet {packetStruct.__name__}: {exc}")
             # continue
         else:
@@ -189,7 +179,6 @@ def construct_packet(data: bytes, packetID: int, packetInfo) -> type | None:
     if not structureMatch:
         print(f"[Error]\tNo matching structure found for packet ID {packetID} with data length {len(data)}")
         packet = None
-        # raise ValueError(f"No matching structure found for packet ID {packetID} with data length {len(data)}")
 
     return packet
 
@@ -199,7 +188,9 @@ def construct_packet(data: bytes, packetID: int, packetInfo) -> type | None:
 # ---------------------------------------------------------------------------
 
 
-def get_telemetry(MetaData: Type, IP: str = "0.0.0.0", stop_event: Optional[threading.Event] = None) -> Generator[Tuple[Type[Any] | None, int, Type[Any]], None, None]:
+def get_telemetry(
+    MetaData: Type, IP: str = "0.0.0.0", stop_event: Optional[threading.Event] = None
+) -> Generator[Tuple[Type[Any] | None, int, Type[Any]], None, None]:
 
     UDP_IP = IP
     UDP_PORT = MetaData.port
@@ -230,8 +221,6 @@ def get_telemetry(MetaData: Type, IP: str = "0.0.0.0", stop_event: Optional[thre
             packetID = int(getattr(headerPacket, _packetIDName))
             packetInfo = MetaData.packetInfo.get(packetID)
 
-            # headerPacket, packetID, packetInfo = retrieve_and_process_header(data, _headerBufferSize, _headerPacketStruct, _packetIDName)
-
             if packetInfo:
                 packet = construct_packet(data, packetID, packetInfo)
             else:
@@ -246,7 +235,7 @@ def get_telemetry(MetaData: Type, IP: str = "0.0.0.0", stop_event: Optional[thre
             try:
                 data, _ = sock.recvfrom(_fullBufferSize)
             except TimeoutError:
-                continue  # check stop_event again
+                continue
             except KeyboardInterrupt:
                 print("[NTWK] [Info]\tKeyboardInterrupt received, shutting down server.")
                 stop_event.set()
@@ -261,8 +250,6 @@ def get_telemetry(MetaData: Type, IP: str = "0.0.0.0", stop_event: Optional[thre
 
             packetID = int(getattr(headerPacket, _packetIDName))
             packetInfo = MetaData.packetInfo.get(packetID)
-
-            # headerPacket, packetID, packetInfo = retrieve_and_process_header(data, _headerBufferSize, _headerPacketStruct, _packetIDName)
 
             if packetInfo:
                 packet = construct_packet(data, packetID, packetInfo)
@@ -282,9 +269,3 @@ def network_listener(MetaData: Type, storage: CentralStorage, IP: str = "0.0.0.0
         a += 1
         # print(f"[NTWK] [Info]\tReceived packet ID {packetID}")
         storage._write(packetID, packet)
-
-    print()
-
-    # if a == 1000:
-    #     print("[Info]\tReceived 1000 packets, stopping listener.")
-    # break
