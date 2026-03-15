@@ -19,6 +19,9 @@ from support.server import ReadOnlyStorage, threadManager
 from data_structures.projectCars2_packets import MetaData as PC2MetaData
 from data_structures.f1_2024_struct import MetaData as F12024MetaData
 from data_structures.beamng_drive import MetaData as BNGMetaData
+from data_structures.FM8_struct import MetaData as FM8MetaData
+
+# from data_structures.FH5_struct import MetaData as FH6MetaData
 
 
 def example_worker_thread(worker_id: int, ro_storage: ReadOnlyStorage, stop_event: threading.Event) -> None:
@@ -44,15 +47,14 @@ def example_worker_thread(worker_id: int, ro_storage: ReadOnlyStorage, stop_even
         #         print(speed)
 
         # * demo - printing your current speed in beamng
-
-        data = snapshot.get("lastestData")
-        if data:
-            telemetry = data.get("TelemetryData")
-            if telemetry:
-                speed = telemetry.speed
-                roundedSpeed = round(speed * 2.23694, 2)
-                gear = telemetry.gear if telemetry.gear else "\x00"
-                print(f"{ord(gear)-1} : {roundedSpeed}")
+        # data = snapshot.get("lastestData")
+        # if data:
+        #     telemetry = data.get("TelemetryData")
+        #     if telemetry:
+        #         speed = telemetry.speed
+        #         roundedSpeed = round(speed * 2.23694, 2)
+        #         gear = telemetry.gear if telemetry.gear else "\x00"
+        #         print(f"{ord(gear)-1} : {roundedSpeed}")
 
         # * demo - printing your current speed in project cars 2
         # data = snapshot.get("lastestData")
@@ -62,14 +64,27 @@ def example_worker_thread(worker_id: int, ro_storage: ReadOnlyStorage, stop_even
         #         speed = telemetry.sSpeed
         #         print(round(speed * 2.23694, 2))
 
+        # * demo - printing your current speed in forza motorsports 8
+        data = snapshot.get("lastestData")
+        if data:
+            # telemetry = data.get("SledData")
+            # if telemetry:
+            #     engRPM = telemetry.CurrentEngineRpm
+            #     print(engRPM)
+            telemetry = data.get("DashData")
+            if telemetry:
+                speed = telemetry.Speed
+                print(round(speed * 2.23694, 2))
+
     print(f"[THRD] [INFO]\tWorker {worker_id} stopping.")
 
 
 def main() -> None:
     # Setup active metadata and local IP
     # ACTIVE_META = F12024MetaData
-    ACTIVE_META = BNGMetaData
+    # ACTIVE_META = BNGMetaData
     # ACTIVE_META = PC2MetaData
+    ACTIVE_META = FM8MetaData
 
     # localIP = "127.0.0.1"
     localIP = "0.0.0.0"

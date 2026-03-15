@@ -156,25 +156,37 @@ def construct_packet(data: bytes, packetID: int, packetInfo) -> type | None:
     structureMatch = False
     packet = None
 
-    # the loop is for cases where there are multiple possible packet structures for a given packet ID, which is the case for packet 8 in PC2
+    # the loop is for cases where there are multiple possible packet structures
+    packetSizes = []
+    dataLength = len(data)
     for packetBufferSize, packetStruct in packetInfo:
-        if len(data) < packetBufferSize:
-            print(f"[Warning]\tReceived data length {len(data)} is less than expected packet buffer size {packetBufferSize} for packet ID {packetID}")
-            # raise ValueError(f"Received data length {len(data)} is less than expected packet buffer size {packetBufferSize}")
-        elif len(data) > packetBufferSize:
+
+        if packetBufferSize != dataLength:
             print(
-                f"[Warning]\tReceived data length {len(data)} is greater than expected packet buffer size {packetBufferSize} for packet ID {packetID}. Extra data will be ignored."
+                f"[Warning]\tReceived data length {dataLength} doesnt match expected packet buffer size {packetBufferSize} for packet ID {packetID}"
             )
-            # raise ValueError(f"Received data length {len(data)} is greater than expected packet buffer size {packetBufferSize}")
-        try:
-            rawPacket = packetStruct.from_buffer_copy(data[0:packetBufferSize])
-        except ValueError as exc:
-            # raise ValueError(f"[Error]\tFailed to construct packet {packetStruct.__name__}: {exc}")
-            continue
+            packetSizes.append(packetBufferSize)
+        # if len(data) < packetBufferSize:
+        #     print(f"[Warning]\tReceived data length {len(data)} is less than expected packet buffer size {packetBufferSize} for packet ID {packetID}")
+        #     # raise ValueError(f"Received data length {len(data)} is less than expected packet buffer size {packetBufferSize}")
+        # elif len(data) > packetBufferSize:
+        #     print(
+        #         f"[Warning]\tReceived data length {len(data)} is greater than expected packet buffer size {packetBufferSize} for packet ID {packetID}. Extra data will be ignored."
+        #     )
+        # raise ValueError(f"Received data length {len(data)} is greater than expected packet buffer size {packetBufferSize}")
         else:
-            packet = dynamic_ingest(rawPacket)
-            structureMatch = True
-            break
+            try:
+                rawPacket = packetStruct.from_buffer_copy(data[0:packetBufferSize])
+            except ValueError as exc:
+                # raise ValueError(f"[Error]\tFailed to construct packet {packetStruct.__name__}: {exc}")
+                continue
+            else:
+                packet = dynamic_ingest(rawPacket)
+                structureMatch = True
+                break
+    if len(packetInfo) == len(packetSizes):
+        print(f"[Warning]\tNo matching packet buffer size [{packetSizes}] for data length {dataLength}")
+        packet = None
 
     if not structureMatch:
         print(f"[Error]\tNo matching structure found for packet ID {packetID} with data length {len(data)}")

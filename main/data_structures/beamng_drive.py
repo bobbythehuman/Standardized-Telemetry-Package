@@ -1,6 +1,8 @@
 import ctypes
 from enum import Enum
 
+# source
+# https://documentation.beamng.com/modding/protocols/
 
 class DataTypes(Enum):
     STRUCTURE = ctypes.LittleEndianStructure
@@ -12,6 +14,7 @@ class DataTypes(Enum):
     FLOAT = ctypes.c_float
     CHAR = ctypes.c_char
 
+# OutGauge UDP protocol
 
 # Items marked as `N/A` are not implemented.
 
@@ -61,6 +64,34 @@ class TelemetryData(DataTypes.STRUCTURE.value):
 # local DL_ABS          = 2 ^ 10   -- abs active or switched off
 # local DL_SPARE        = 2 ^ 11   -- N/A
 
+# MotionSim UDP protocol
+
+class MotionSim(DataTypes.STRUCTURE.value):
+    _fields_ = [
+        ("format",      DataTypes.CHAR.value * 4),  # allows to verify if packet is the expected format, fixed value of "BNG1"
+        ("posX",        DataTypes.FLOAT.value),     # world position of the vehicle
+        ("posY",        DataTypes.FLOAT.value),     # world position of the vehicle
+        ("posZ",        DataTypes.FLOAT.value),     # world position of the vehicle
+        ("velX",        DataTypes.FLOAT.value),     # velocity of the vehicle
+        ("velY",        DataTypes.FLOAT.value),     # velocity of the vehicle
+        ("velZ",        DataTypes.FLOAT.value),     # velocity of the vehicle
+        ("accX",        DataTypes.FLOAT.value),     # acceleration of the vehicle, gravity not included
+        ("accY",        DataTypes.FLOAT.value),     # acceleration of the vehicle, gravity not included
+        ("accZ",        DataTypes.FLOAT.value),     # acceleration of the vehicle, gravity not included
+        ("upX",         DataTypes.FLOAT.value),     # vector components of a vector pointing "up" relative to the vehicle
+        ("upY",         DataTypes.FLOAT.value),     # vector components of a vector pointing "up" relative to the vehicle
+        ("upZ",         DataTypes.FLOAT.value),     # vector components of a vector pointing "up" relative to the vehicle
+        ("rollPos",     DataTypes.FLOAT.value),     # angle of roll, pitch and yaw of the vehicle
+        ("pitchPos",    DataTypes.FLOAT.value),     # angle of roll, pitch and yaw of the vehicle
+        ("yawPos",      DataTypes.FLOAT.value),     # angle of roll, pitch and yaw of the vehicle
+        ("rollVel",     DataTypes.FLOAT.value),     # angular velocities of roll, pitch and yaw of the vehicle
+        ("pitchVel",    DataTypes.FLOAT.value),     # angular velocities of roll, pitch and yaw of the vehicle
+        ("yawVel",      DataTypes.FLOAT.value),     # angular velocities of roll, pitch and yaw of the vehicle
+        ("rollAcc",     DataTypes.FLOAT.value),     # angular acceleration of roll, pitch and yaw of the vehicle
+        ("pitchAcc",    DataTypes.FLOAT.value),     # angular acceleration of roll, pitch and yaw of the vehicle
+        ("yawAcc",      DataTypes.FLOAT.value),     # angular acceleration of roll, pitch and yaw of the vehicle
+    ]
+
 
 ### MetaData
 
@@ -70,13 +101,7 @@ class MetaData:
     headerInfo: tuple[int, type | None] = (0, None)
     packetIDAttribute: str | None = None
     packetInfo: dict[int, tuple[tuple[int, type], ...]] = {
-        0: ((96, TelemetryData),),
-        # 1: ((308, RaceData),),
-        # 2: ((1136, ParticipantsData),),
-        # 3: ((1059, TimingsData),),
-        # 4: ((24, GameStateData),),
-        # 7: ((1040, TimeStatsData),),
-        # 8: ((1452, VehicleClassNamesData), (1164, ParticipantVehicleNamesData),),
+        0: ((96, TelemetryData), (88, MotionSim),),
     }
 
 
