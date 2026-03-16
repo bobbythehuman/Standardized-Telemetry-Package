@@ -20,8 +20,7 @@ from data_structures.projectCars2_packets import MetaData as PC2MetaData
 from data_structures.f1_2024_struct import MetaData as F12024MetaData
 from data_structures.beamng_drive import MetaData as BNGMetaData
 from data_structures.FM8_struct import MetaData as FM8MetaData
-
-# from data_structures.FH5_struct import MetaData as FH6MetaData
+from data_structures.FH5_struct import MetaData as FH5MetaData
 
 
 def example_worker_thread(worker_id: int, ro_storage: ReadOnlyStorage, stop_event: threading.Event) -> None:
@@ -84,7 +83,8 @@ def main() -> None:
     # ACTIVE_META = F12024MetaData
     # ACTIVE_META = BNGMetaData
     # ACTIVE_META = PC2MetaData
-    ACTIVE_META = FM8MetaData
+    # ACTIVE_META = FM8MetaData
+    ACTIVE_META = FH5MetaData
 
     # localIP = "127.0.0.1"
     localIP = "0.0.0.0"

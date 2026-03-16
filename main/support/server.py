@@ -162,28 +162,21 @@ def construct_packet(data: bytes, packetID: int, packetInfo) -> type | None:
     for packetBufferSize, packetStruct in packetInfo:
 
         if packetBufferSize != dataLength:
-            print(
-                f"[Warning]\tReceived data length {dataLength} doesnt match expected packet buffer size {packetBufferSize} for packet ID {packetID}"
-            )
+            # print(
+            #     f"[Warning]\tReceived data length {dataLength} doesnt match expected packet buffer size {packetBufferSize} for packet ID {packetID}"
+            # )
             packetSizes.append(packetBufferSize)
-        # if len(data) < packetBufferSize:
-        #     print(f"[Warning]\tReceived data length {len(data)} is less than expected packet buffer size {packetBufferSize} for packet ID {packetID}")
-        #     # raise ValueError(f"Received data length {len(data)} is less than expected packet buffer size {packetBufferSize}")
-        # elif len(data) > packetBufferSize:
-        #     print(
-        #         f"[Warning]\tReceived data length {len(data)} is greater than expected packet buffer size {packetBufferSize} for packet ID {packetID}. Extra data will be ignored."
-        #     )
-        # raise ValueError(f"Received data length {len(data)} is greater than expected packet buffer size {packetBufferSize}")
+
         else:
             try:
                 rawPacket = packetStruct.from_buffer_copy(data[0:packetBufferSize])
             except ValueError as exc:
-                # raise ValueError(f"[Error]\tFailed to construct packet {packetStruct.__name__}: {exc}")
                 continue
             else:
                 packet = dynamic_ingest(rawPacket)
                 structureMatch = True
                 break
+
     if len(packetInfo) == len(packetSizes):
         print(f"[Warning]\tNo matching packet buffer size [{packetSizes}] for data length {dataLength}")
         packet = None
@@ -265,7 +258,7 @@ def get_telemetry(
             yield packet, packetID, headerPacket
     else:
         # * Method 2
-        # only run if stop_event is provided, allowing for graceful shutdown
+        # only run if stop_event is provided
         print("[NTWK] [Info]\tStop event provided, running until stop_event is set.")
         while not stop_event.is_set():
             try:
