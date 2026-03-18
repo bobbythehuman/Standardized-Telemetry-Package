@@ -71,6 +71,7 @@ class threadManager:
     def __init__(self):
         self.ACTIVE_META = None
         self.IP = None
+        self.destinationIP = None
 
         self.activeStorage = None
         self.readOnlyStorage = None
@@ -91,6 +92,9 @@ class threadManager:
     def updateIP(self, ip: str):
         self.IP = ip
 
+    def updateSendIP(self, ip:str):
+        self.destinationIP = ip
+
     def addWorkerThread(self, mainFunc):
         self.threadCount += 1
         # readOnlyStorage may need updating when metadata gets updated
@@ -109,7 +113,7 @@ class threadManager:
 
         self.networkThread = threading.Thread(
             target=network_listener,
-            kwargs={"MetaData": self.ACTIVE_META, "IP": self.IP, "storage": self.activeStorage, "stop_event": self.stop_event},
+            kwargs={"MetaData": self.ACTIVE_META, "IP": self.IP, "storage": self.activeStorage, "stop_event": self.stop_event, "destinationIP": self.destinationIP},
             daemon=True,
         )
 
@@ -173,6 +177,7 @@ def construct_packet(data: bytes, packetID: int, packetInfo) -> type | None:
             except ValueError as exc:
                 continue
             else:
+                # check and do cipher here
                 packet = dynamic_ingest(rawPacket)
                 structureMatch = True
                 break
@@ -220,7 +225,7 @@ def retrieve_packet(data: bytes, MetaData) -> tuple[type | None, int, Any]:
 
 
 def get_telemetry(
-    MetaData: Type, IP: str = "0.0.0.0", stop_event: Optional[threading.Event] = None
+    MetaData: Type, IP: str = "0.0.0.0", stop_event: Optional[threading.Event] = None, destinationIP=None
 ) -> Generator[Tuple[Type[Any] | None, int, Type[Any] | None], None, None]:
 
     UDP_IP = IP
@@ -230,6 +235,17 @@ def get_telemetry(
     _headerBufferSize = MetaData.headerInfo[0]
     _headerPacketStruct = MetaData.headerInfo[1]
     _packetIDName = MetaData.packetIDAttribute
+
+    # if the game requires a heart beat
+    heartBeat = MetaData.heartBeatFunc
+    _destinationPort = MetaData.destinationPort
+    HEARTBEAT_INTERVAL = 5
+    PACKET_COUNTER = 0
+    if heartBeat and not destinationIP:
+        raise Exception(f"Heart beat is present, but no destination IP was provided!")
+
+    # if the game data requires decrytion/ de-ciphering
+    _decryptionAlgorithm = MetaData.decrytionFunc
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(1.0)  # allows checking stop_event periodically
@@ -242,9 +258,19 @@ def get_telemetry(
         # no stop_event avaiable, probably running single threaded
         print("[NTWK] [Warning]\tNo stop event provided, running indefinitely. Use Ctrl+C to stop.")
         while True:
+            if heartBeat:
+                if PACKET_COUNTER % HEARTBEAT_INTERVAL == 0:
+                    heartBeat(sock, (destinationIP, _destinationPort))
+                    PACKET_COUNTER += 1
+                else:
+                    PACKET_COUNTER = 0
+
             try:
                 data, _ = sock.recvfrom(_fullBufferSize)
             except TimeoutError:
+                if heartBeat:
+                    heartBeat(sock, (destinationIP, _destinationPort))
+                    PACKET_COUNTER = 0
                 continue
             except KeyboardInterrupt:
                 print("[NTWK] [Info]\tKeyboardInterrupt received, shutting down server.")
@@ -252,6 +278,9 @@ def get_telemetry(
             except OSError as exc:
                 print(f"[NTWK] [Error]\tSocket error: {exc}")
                 break
+
+            if _decryptionAlgorithm:
+                data = _decryptionAlgorithm(data)
 
             packet, packetID, headerPacket = retrieve_packet(data, MetaData)
 
@@ -261,9 +290,19 @@ def get_telemetry(
         # only run if stop_event is provided
         print("[NTWK] [Info]\tStop event provided, running until stop_event is set.")
         while not stop_event.is_set():
+            if heartBeat:
+                if PACKET_COUNTER % HEARTBEAT_INTERVAL == 0:
+                    heartBeat(sock, (destinationIP, _destinationPort))
+                    PACKET_COUNTER += 1
+                else:
+                    PACKET_COUNTER = 0
+
             try:
                 data, _ = sock.recvfrom(_fullBufferSize)
             except TimeoutError:
+                if heartBeat:
+                    heartBeat(sock, (destinationIP, _destinationPort))
+                    PACKET_COUNTER = 0
                 continue
             except KeyboardInterrupt:
                 print("[NTWK] [Info]\tKeyboardInterrupt received, shutting down server.")
@@ -271,6 +310,10 @@ def get_telemetry(
             except OSError as exc:
                 print(f"[NTWK] [Error]\tSocket error: {exc}")
                 stop_event.set()
+
+            print(data)
+            if _decryptionAlgorithm:
+                data = _decryptionAlgorithm(data)
 
             packet, packetID, headerPacket = retrieve_packet(data, MetaData)
 
@@ -280,11 +323,11 @@ def get_telemetry(
     print("[NTWK] [Info]\tServer shutting down.")
 
 
-def network_listener(MetaData: Type, storage: CentralStorage, IP: str = "0.0.0.0", stop_event: Optional[threading.Event] = None) -> None:
+def network_listener(MetaData: Type, storage: CentralStorage, IP: str = "0.0.0.0", stop_event: Optional[threading.Event] = None, destinationIP = None) -> None:
     if storage is None:
         raise ValueError("[NTWK] [Error]\tCentralStorage instance must be provided to network_listener")
-    a = 1
-    for packet, packetID, headerPacket in get_telemetry(MetaData, IP, stop_event):
-        a += 1
+    # a = 1
+    for packet, packetID, headerPacket in get_telemetry(MetaData, IP, stop_event, destinationIP=destinationIP):
+        # a += 1
         # print(f"[NTWK] [Info]\tReceived packet ID {packetID}")
         storage._write(packetID, packet)

@@ -16,11 +16,12 @@ import threading
 
 from support.server import ReadOnlyStorage, threadManager
 
-from data_structures.projectCars2_packets import MetaData as PC2MetaData
 from data_structures.f1_2024_struct import MetaData as F12024MetaData
 from data_structures.beamng_drive import MetaData as BNGMetaData
-from data_structures.FM8_struct import MetaData as FM8MetaData
+from data_structures.PC2_struct import MetaData as PC2MetaData
 from data_structures.FH5_struct import MetaData as FH5MetaData
+from data_structures.FM8_struct import MetaData as FM8MetaData
+from data_structures.GT7_struct import MetaData as GT7MetaData
 
 
 def example_worker_thread(worker_id: int, ro_storage: ReadOnlyStorage, stop_event: threading.Event) -> None:
@@ -64,16 +65,24 @@ def example_worker_thread(worker_id: int, ro_storage: ReadOnlyStorage, stop_even
         #         print(round(speed * 2.23694, 2))
 
         # * demo - printing your current speed in forza motorsports 8
-        data = snapshot.get("lastestData")
-        if data:
-            # telemetry = data.get("SledData")
-            # if telemetry:
-            #     engRPM = telemetry.CurrentEngineRpm
-            #     print(engRPM)
-            telemetry = data.get("DashData")
-            if telemetry:
-                speed = telemetry.Speed
-                print(round(speed * 2.23694, 2))
+        # data = snapshot.get("lastestData")
+        # if data:
+        # telemetry = data.get("SledData")
+        # if telemetry:
+        #     engRPM = telemetry.CurrentEngineRpm
+        #     print(engRPM)
+        # telemetry = data.get("DashData")
+        # if telemetry:
+        #     speed = telemetry.Speed
+        #     print(round(speed * 2.23694, 2))
+
+        # * demo - printing your current speed in gran turismo 7
+        # data = snapshot.get("lastestData")
+        # if data:
+        #     telemetry = data.get("PacketCData")
+        #     if telemetry:
+        #         speed = telemetry.speed
+        #         print(round(speed * 2.23694, 2))
 
     print(f"[THRD] [INFO]\tWorker {worker_id} stopping.")
 
@@ -84,14 +93,19 @@ def main() -> None:
     # ACTIVE_META = BNGMetaData
     # ACTIVE_META = PC2MetaData
     # ACTIVE_META = FM8MetaData
-    ACTIVE_META = FH5MetaData
+    # ACTIVE_META = FH5MetaData
+    ACTIVE_META = GT7MetaData
 
     # localIP = "127.0.0.1"
     localIP = "0.0.0.0"
 
+    # the ip of the device that is sending the data/ running the game
+    sendIP = "192.168.1.161"
+
     activeThreads = threadManager()
     activeThreads.updateMeta(ACTIVE_META)
     activeThreads.updateIP(localIP)
+    activeThreads.updateSendIP(sendIP)
 
     print("[MAIN] [INFO]\tStart at ", datetime.now().strftime("%a-%d-%b, %H-%M-%S-%f"))
 
