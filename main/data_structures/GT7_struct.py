@@ -209,6 +209,7 @@ class PacketTildaData(DataTypes.STRUCTURE.value):
         ("UNKNOWNFLOAT11",      DataTypes.FLOAT.value),             # Unknown float
     ]
 
+
 class PacketCData(DataTypes.STRUCTURE.value):
     # _pack_ = 1
     _fields_ = [
@@ -298,7 +299,10 @@ def heartBeat(socket, destination: tuple[int, int], msg = b'C'):
 ### Decryption
 
 # pip install pycryptodome
-from Crypto.Cipher import Salsa20 as s20
+try:
+    from Crypto.Cipher import Salsa20 as s20
+except:
+    print("Cant use GT7 struct! Install pycryptodome. 'pip install pycryptodome'")
 import struct
 def decrypt_data(raw: bytes) -> bytes:
     def detect_packet_version(data: bytes) -> str:
