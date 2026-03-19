@@ -10,18 +10,18 @@ Architecture:
 # auto find files from data_structure folder then retreive metaData class
 # create a folder for worker functions
 
-from datetime import datetime
 import time
 import threading
 
-from support.server import ReadOnlyStorage, threadManager
+from support.server import ReadOnlyStorage, multiThreadedTelemetry, get_telemetry
 
 from data_structures.f1_2024_struct import MetaData as F12024MetaData
-from data_structures.beamng_drive import MetaData as BNGMetaData
+from data_structures.BNG_struct import MetaData as BNGMetaData
 from data_structures.PC2_struct import MetaData as PC2MetaData
 from data_structures.FH5_struct import MetaData as FH5MetaData
 from data_structures.FM8_struct import MetaData as FM8MetaData
-from data_structures.GT7_struct import MetaData as GT7MetaData
+
+# from data_structures.GT7_struct import MetaData as GT7MetaData
 
 
 def example_worker_thread(worker_id: int, ro_storage: ReadOnlyStorage, stop_event: threading.Event) -> None:
@@ -92,9 +92,9 @@ def main() -> None:
     # ACTIVE_META = F12024MetaData
     # ACTIVE_META = BNGMetaData
     # ACTIVE_META = PC2MetaData
-    # ACTIVE_META = FM8MetaData
+    ACTIVE_META = FM8MetaData
     # ACTIVE_META = FH5MetaData
-    ACTIVE_META = GT7MetaData
+    # ACTIVE_META = GT7MetaData
 
     # localIP = "127.0.0.1"
     localIP = "0.0.0.0"
@@ -102,46 +102,25 @@ def main() -> None:
     # the ip of the device that is sending the data/ running the game
     sendIP = "192.168.1.161"
 
-    activeThreads = threadManager()
+    activeThreads = multiThreadedTelemetry()
     activeThreads.updateMeta(ACTIVE_META)
     activeThreads.updateIP(localIP)
     activeThreads.updateSendIP(sendIP)
 
-    print("[MAIN] [INFO]\tStart at ", datetime.now().strftime("%a-%d-%b, %H-%M-%S-%f"))
-
-    # --------------------------------------------------------------
-    # Worker Threads Here
-    # --------------------------------------------------------------
-
-    # you currently cant pass any arguments to your functions
     activeThreads.addWorkerThread(example_worker_thread)
 
-    # activeThreads.addWorkerThread(worker_thread)
+    activeThreads.StartTelemetry()
 
-    # --------------------------------------------------------------
+    # for packet, packetID, headerPacket in get_telemetry(ACTIVE_META):
+    #     if packetID == 6:
 
-    # Starting all threads
-    activeThreads.startThreads()
+    #         if not packet:
+    #             continue
 
-    # Wait for stop signal
-    print("\n[MAIN] [INFO]\tRunning — press Ctrl+C to stop.")
-    endProgram = ""
-    try:
-        while not activeThreads.isStillActive():
-            activeThreads.wait(0.5)
+    #         currnetPlayer = packet.m_carTelemetryData[0]
+    #         speedValue = currnetPlayer.m_speed
 
-            # only stop threads here if they dont get stopped any where else
-            # endProgram = input(f"[q] to quit the program: ")
-            # if endProgram.lower() == "q":
-            #     activeThreads.triggerStop()
-
-    except KeyboardInterrupt:
-        print("\n[MAIN] [INFO]\tKeyboardInterrupt received.")
-    finally:
-        print("[MAIN] [INFO]\tStopping all threads\n")
-        activeThreads.stopThreads()
-
-    print("[MAIN] [INFO]\tEnd at ", datetime.now().strftime("%a-%d-%b, %H-%M-%S-%f"))
+    #         print(f"{speedValue} KPH")
 
 
 if __name__ == "__main__":

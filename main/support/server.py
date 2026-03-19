@@ -2,8 +2,11 @@ import socket
 import threading
 from dataclasses import dataclass
 from typing import Generator, Tuple, Type, Any, Optional
+from datetime import datetime
 
 from support.digestion import dynamic_ingest
+
+# from ..support.digestion import dynamic_ingest
 
 # ---------------------------------------------------------------------------
 # Central Storage
@@ -67,15 +70,16 @@ class ReadOnlyStorage:
 # ---------------------------------------------------------------------------
 
 
-class threadManager:
+class multiThreadedTelemetry:
     def __init__(self):
         self.ACTIVE_META = None
-        self.IP = None
+        self.IP = "0.0.0.0"
         self.destinationIP = None
 
         self.activeStorage = None
         self.readOnlyStorage = None
         self.stop_event = threading.Event()
+        self.manuallyStop = False
 
         self.networkThread = None
         self.workerThreads: dict[int, threading.Thread] = {}
@@ -92,7 +96,7 @@ class threadManager:
     def updateIP(self, ip: str):
         self.IP = ip
 
-    def updateSendIP(self, ip:str):
+    def updateSendIP(self, ip: str):
         self.destinationIP = ip
 
     def addWorkerThread(self, mainFunc):
@@ -113,7 +117,13 @@ class threadManager:
 
         self.networkThread = threading.Thread(
             target=network_listener,
-            kwargs={"MetaData": self.ACTIVE_META, "IP": self.IP, "storage": self.activeStorage, "stop_event": self.stop_event, "destinationIP": self.destinationIP},
+            kwargs={
+                "MetaData": self.ACTIVE_META,
+                "IP": self.IP,
+                "storage": self.activeStorage,
+                "stop_event": self.stop_event,
+                "destinationIP": self.destinationIP,
+            },
             daemon=True,
         )
 
@@ -133,13 +143,16 @@ class threadManager:
     def triggerStop(self):
         self.stop_event.set()
 
+    def manualStop(self, target):
+        self.manuallyStop = target
+
     def stopThreads(self):
         if not self.workersAreWorking:
             return
         if not self.networkThread:
             return
 
-        self.stop_event.set()
+        self.triggerStop()
         self.networkThread.join(timeout=0.5)
 
         for workerName, workerThread in self.workerThreads.items():
@@ -149,6 +162,31 @@ class threadManager:
 
         self.workersAreWorking = False
         print("\n[MAIN] [INFO]\tAll threads stopped. Exiting.")
+
+    def StartTelemetry(self):
+        print("[MAIN] [INFO]\tStart at ", datetime.now().strftime("%a-%d-%b, %H-%M-%S-%f"))
+        self.startThreads()
+        print("\n[MAIN] [INFO]\tRunning — press Ctrl+C to stop.")
+        self.waitForStopSignal()
+        print("[MAIN] [INFO]\tEnd at ", datetime.now().strftime("%a-%d-%b, %H-%M-%S-%f"))
+
+    def waitForStopSignal(self):
+        endProgram = ""
+        try:
+            while not self.isStillActive():
+                self.wait(0.5)
+
+                if self.manuallyStop:
+                    # only stop threads here if they dont get stopped any where else
+                    endProgram = input(f"[Q] to quit the program: ")
+                    if endProgram.lower() == "q":
+                        self.triggerStop()
+
+        except KeyboardInterrupt:
+            print("\n[MAIN] [INFO]\tKeyboardInterrupt received.")
+        finally:
+            print("[MAIN] [INFO]\tStopping all threads\n")
+            self.stopThreads()
 
 
 # ---------------------------------------------------------------------------
@@ -230,6 +268,7 @@ def get_telemetry(
 
     UDP_IP = IP
     UDP_PORT = MetaData.port
+    manuallyStopped = False
 
     _fullBufferSize = MetaData.fullBufferSize
     _headerBufferSize = MetaData.headerInfo[0]
@@ -237,15 +276,26 @@ def get_telemetry(
     _packetIDName = MetaData.packetIDAttribute
 
     # if the game requires a heart beat
-    heartBeat = MetaData.heartBeatFunc
-    _destinationPort = MetaData.destinationPort
+    if hasattr(MetaData, "heartBeatFunc"):
+        heartBeat = MetaData.heartBeatFunc
+    else:
+        heartBeat = None
+
+    if hasattr(MetaData, "destinationPort"):
+        _destinationPort = MetaData.destinationPort
+    else:
+        _destinationPort = None
+
     HEARTBEAT_INTERVAL = 5
     PACKET_COUNTER = 0
     if heartBeat and not destinationIP:
         raise Exception(f"Heart beat is present, but no destination IP was provided!")
 
     # if the game data requires decrytion/ de-ciphering
-    _decryptionAlgorithm = MetaData.decrytionFunc
+    if hasattr(MetaData, "decrytionFunc"):
+        _decryptionAlgorithm = MetaData.decrytionFunc
+    else:
+        _decryptionAlgorithm = None
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(1.0)  # allows checking stop_event periodically
@@ -256,8 +306,9 @@ def get_telemetry(
     if not stop_event:
         # * Method 1
         # no stop_event avaiable, probably running single threaded
+        # TODO an error occours when trying to stop with keyboardInterrupt
         print("[NTWK] [Warning]\tNo stop event provided, running indefinitely. Use Ctrl+C to stop.")
-        while True:
+        while not manuallyStopped:
             if heartBeat:
                 if PACKET_COUNTER % HEARTBEAT_INTERVAL == 0:
                     heartBeat(sock, (destinationIP, _destinationPort))
@@ -271,20 +322,22 @@ def get_telemetry(
                 if heartBeat:
                     heartBeat(sock, (destinationIP, _destinationPort))
                     PACKET_COUNTER = 0
-                continue
+                # continue
             except KeyboardInterrupt:
                 print("[NTWK] [Info]\tKeyboardInterrupt received, shutting down server.")
-                break
+                manuallyStopped = True
+                # continue
             except OSError as exc:
                 print(f"[NTWK] [Error]\tSocket error: {exc}")
-                break
+                manuallyStopped = True
+                # continue
+            else:
+                if _decryptionAlgorithm:
+                    data = _decryptionAlgorithm(data)
 
-            if _decryptionAlgorithm:
-                data = _decryptionAlgorithm(data)
+                packet, packetID, headerPacket = retrieve_packet(data, MetaData)
 
-            packet, packetID, headerPacket = retrieve_packet(data, MetaData)
-
-            yield packet, packetID, headerPacket
+                yield packet, packetID, headerPacket
     else:
         # * Method 2
         # only run if stop_event is provided
@@ -303,27 +356,30 @@ def get_telemetry(
                 if heartBeat:
                     heartBeat(sock, (destinationIP, _destinationPort))
                     PACKET_COUNTER = 0
-                continue
+                # continue
             except KeyboardInterrupt:
                 print("[NTWK] [Info]\tKeyboardInterrupt received, shutting down server.")
                 stop_event.set()
+                # continue
             except OSError as exc:
                 print(f"[NTWK] [Error]\tSocket error: {exc}")
                 stop_event.set()
+                # continue
+            else:
+                if _decryptionAlgorithm:
+                    data = _decryptionAlgorithm(data)
 
-            print(data)
-            if _decryptionAlgorithm:
-                data = _decryptionAlgorithm(data)
+                packet, packetID, headerPacket = retrieve_packet(data, MetaData)
 
-            packet, packetID, headerPacket = retrieve_packet(data, MetaData)
-
-            yield packet, packetID, headerPacket
+                yield packet, packetID, headerPacket
 
     sock.close()
     print("[NTWK] [Info]\tServer shutting down.")
 
 
-def network_listener(MetaData: Type, storage: CentralStorage, IP: str = "0.0.0.0", stop_event: Optional[threading.Event] = None, destinationIP = None) -> None:
+def network_listener(
+    MetaData: Type, storage: CentralStorage, IP: str = "0.0.0.0", stop_event: Optional[threading.Event] = None, destinationIP=None
+) -> None:
     if storage is None:
         raise ValueError("[NTWK] [Error]\tCentralStorage instance must be provided to network_listener")
     # a = 1
