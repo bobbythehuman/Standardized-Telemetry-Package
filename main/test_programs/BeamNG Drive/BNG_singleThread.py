@@ -2,9 +2,9 @@ import sys
 from pathlib import Path
 
 # Add parent directory to path so imports work when running this file directly
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from data_structures.FH5_struct import MetaData
+from data_structures.BNG_struct import MetaData
 from support.server import telemetryManager
 
 telemetry = telemetryManager()
@@ -17,8 +17,15 @@ for packet, packetID, headerPacket in telemetry.get_telemetry():
 
     packetName = packet.__name__
 
-    if packetName == "DashData":
-        packetSpeed = packet.Speed
+    # for the TelemetryData packet
+    if packetName == "TelemetryData":
+        packetSpeed = packet.speed
         speedValue = round(packetSpeed * 3.6, 2)
 
         print(f"{speedValue} KPH")
+
+    # for the MotionSim packet
+    if packetName == "MotionSim":
+        format = packet.format
+
+        print(f"Format: {format}")

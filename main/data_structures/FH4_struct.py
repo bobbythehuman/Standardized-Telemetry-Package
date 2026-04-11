@@ -1,9 +1,8 @@
 import ctypes
 from enum import Enum
 
-# source
-# https://forums.forza.net/t/data-out-telemetry-variables-and-structure/535984/2
-# https://pastebin.com/GFbbzbg3
+# should be the same data as FH5, FM7 and FM8
+# see 'forza debug.txt' for setup help
 
 class DataTypes(Enum):
     STRUCTURE = ctypes.LittleEndianStructure

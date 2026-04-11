@@ -754,10 +754,26 @@ class PacketTimeTrialData(DataTypes.STRUCTURE.value):
 ### MetaData
 
 class MetaData:
+    # standard network info
     port: int = 20777
     fullBufferSize: int = 1464
+    
+    # use if a heartbeat is needed
+    heartBeatPort = None
+    heartBeatFunc = None
+    
+    # use for itinial hand shake
+    handShakePort = None
+    handShakeFunc = None
+    
+    # use if the data needs decrypting
+    decrytionFunc = None
+    
+    # use if there is a header packet
     headerInfo: tuple[int, type] = (32, PacketHeader)
     packetIDAttribute: str = "m_packetId"
+    
+    # standard packet info
     packetInfo: dict[int, tuple[tuple[int, type], ...]] = {
         0: ((1349, PacketMotionData),), # Motion
         1: ((753, PacketSessionData),), # Session

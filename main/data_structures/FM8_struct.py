@@ -1,6 +1,9 @@
 import ctypes
 from enum import Enum
 
+# source
+# https://support.forzamotorsport.net/hc/en-us/articles/21742934024211-Forza-Motorsport-Data-Out-Documentation
+
 class DataTypes(Enum):
     STRUCTURE = ctypes.LittleEndianStructure
     
@@ -212,10 +215,26 @@ class DashData(DataTypes.STRUCTURE.value):
 ### MetaData
 
 class MetaData:
+    # standard network info
     port: int = 5300
     fullBufferSize: int = 331
+    
+    # use if a heartbeat is needed
+    heartBeatPort = None
+    heartBeatFunc = None
+    
+    # use for itinial hand shake
+    handShakePort = None
+    handShakeFunc = None
+    
+    # use if the data needs decrypting
+    decrytionFunc = None
+    
+    # use if there is a header packet
     headerInfo: tuple[int, type | None] = (0, None)
     packetIDAttribute: str | None = None
+    
+    # standard packet info
     packetInfo: dict[int, tuple[tuple[int, type], ...]] = {
         0: ((232, SledData), (331, DashData),),
     }

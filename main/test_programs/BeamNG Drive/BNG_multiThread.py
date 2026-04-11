@@ -2,9 +2,9 @@ import sys
 from pathlib import Path
 
 # Add parent directory to path so imports work when running this file directly
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from data_structures.PC2_struct import MetaData
+from data_structures.BNG_struct import MetaData
 from support.server import telemetryManager
 
 
@@ -17,27 +17,26 @@ def displaySpeed(worker_id: int, ro_storage, stop_event):
         if data:
             telemetry = data.get("TelemetryData")
             if telemetry:
-                speedPacket = telemetry.sSpeed
-                speedValue = round(speedPacket * 3.6, 2)
+                packetSpeed = telemetry.speed
+                speedValue = round(packetSpeed * 3.6, 2)
 
                 print(f"{speedValue} KPH")
 
     print(f"[THRD] [INFO]\tWorker {worker_id} stopping.")
 
 
-def displayCurrentCar(worker_id: int, ro_storage, stop_event):
+def displayFormat(worker_id: int, ro_storage, stop_event):
     print(f"[THRD] [INFO]\tWorker {worker_id} started.")
     while not stop_event.is_set():
         snapshot = ro_storage.snapshot()
 
         data = snapshot.get("lastestData")
         if data:
-            participantData = data.get("ParticipantVehicleNamesData")
-            if participantData:
-                currnetPlayer = participantData.sVehicleInfo[0]
-                currentCar = currnetPlayer.sName
+            motionData = data.get("MotionSim")
+            if motionData:
+                format = motionData.format
 
-                print(f"Car: {currentCar}")
+                print(f"Format: {format}")
 
     print(f"[THRD] [INFO]\tWorker {worker_id} stopping.")
 
@@ -45,5 +44,5 @@ def displayCurrentCar(worker_id: int, ro_storage, stop_event):
 activeThreads = telemetryManager()
 activeThreads.updateMeta(MetaData)
 activeThreads.addWorkerThread(displaySpeed)
-activeThreads.addWorkerThread(displayCurrentCar)
+activeThreads.addWorkerThread(displayFormat)
 activeThreads.StartTelemetry()

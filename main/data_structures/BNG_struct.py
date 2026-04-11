@@ -96,10 +96,26 @@ class MotionSim(DataTypes.STRUCTURE.value):
 ### MetaData
 
 class MetaData:
+    # standard network info
     port: int = 4444
     fullBufferSize: int = 96
+    
+    # use if a heartbeat is needed
+    heartBeatPort = None
+    heartBeatFunc = None
+    
+    # use for itinial hand shake
+    handShakePort = None
+    handShakeFunc = None
+    
+    # use if the data needs decrypting
+    decrytionFunc = None
+    
+    # use if there is a header packet
     headerInfo: tuple[int, type | None] = (0, None)
     packetIDAttribute: str | None = None
+    
+    # standard packet info
     packetInfo: dict[int, tuple[tuple[int, type], ...]] = {
         0: ((96, TelemetryData), (88, MotionSim),),
     }

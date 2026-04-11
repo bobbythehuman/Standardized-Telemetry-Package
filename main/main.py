@@ -92,11 +92,11 @@ def example_worker_thread(worker_id: int, ro_storage: ReadOnlyStorage, stop_even
         # if data:
         #     telemetry = data.get("RTCarData")
         #     if telemetry:
-        #         speed = telemetry.gear
+        #         speed = telemetry.speed_Mph
         #         print(speed)
         #     lapData = data.get("RTLapData")
         #     if lapData:
-        #         lap = telemetry.lap
+        #         lap = lapData.lap
         #         print(lap)
 
     print(f"[THRD] [INFO]\tWorker {worker_id} stopping.")

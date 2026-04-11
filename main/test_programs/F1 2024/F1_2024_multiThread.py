@@ -2,9 +2,9 @@ import sys
 from pathlib import Path
 
 # Add parent directory to path so imports work when running this file directly
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from data_structures.BNG_struct import MetaData
+from data_structures.F1_2024_struct import MetaData
 from support.server import telemetryManager
 
 
@@ -15,28 +15,29 @@ def displaySpeed(worker_id: int, ro_storage, stop_event):
 
         data = snapshot.get("lastestData")
         if data:
-            telemetry = data.get("TelemetryData")
+            telemetry = data.get("PacketCarTelemetryData")
             if telemetry:
-                packetSpeed = telemetry.speed
-                speedValue = round(packetSpeed * 3.6, 2)
+                currnetPlayer = telemetry.m_carTelemetryData[0]
+                speedValue = currnetPlayer.m_speed
 
                 print(f"{speedValue} KPH")
 
     print(f"[THRD] [INFO]\tWorker {worker_id} stopping.")
 
 
-def displayFormat(worker_id: int, ro_storage, stop_event):
+def displayCurrentLap(worker_id: int, ro_storage, stop_event):
     print(f"[THRD] [INFO]\tWorker {worker_id} started.")
     while not stop_event.is_set():
         snapshot = ro_storage.snapshot()
 
         data = snapshot.get("lastestData")
         if data:
-            motionData = data.get("MotionSim")
-            if motionData:
-                format = motionData.format
+            lapData = data.get("PacketLapData")
+            if lapData:
+                currnetPlayer = lapData.m_lapData[0]
+                currentLap = currnetPlayer.m_currentLapNum
 
-                print(f"Format: {format}")
+                print(f"Lap {currentLap}")
 
     print(f"[THRD] [INFO]\tWorker {worker_id} stopping.")
 
@@ -44,5 +45,5 @@ def displayFormat(worker_id: int, ro_storage, stop_event):
 activeThreads = telemetryManager()
 activeThreads.updateMeta(MetaData)
 activeThreads.addWorkerThread(displaySpeed)
-activeThreads.addWorkerThread(displayFormat)
+activeThreads.addWorkerThread(displayCurrentLap)
 activeThreads.StartTelemetry()

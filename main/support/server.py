@@ -312,6 +312,9 @@ class telemetryManager:
 
         handShakeDestination = (self.destinationIP, self.handShakePort)
 
+        if (self.handShakeFunc or self.heartBeatFunc) and not self.destinationIP:
+            raise ValueError("[NTWK] [Error]\tDestination IP must be set for handshakes or heartbeats.")
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # listen to occupied ports
         sock.settimeout(1.0)  # allows checking stop_event periodically

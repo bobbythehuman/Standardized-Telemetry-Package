@@ -333,10 +333,26 @@ class VehicleClassNamesData(DataTypes.STRUCTURE.value):
 ### MetaData
 
 class MetaData:
+    # standard network info
     port: int = 5606
     fullBufferSize: int = 1452
+    
+    # use if a heartbeat is needed
+    heartBeatPort = None
+    heartBeatFunc = None
+    
+    # use for itinial hand shake
+    handShakePort = None
+    handShakeFunc = None
+    
+    # use if the data needs decrypting
+    decrytionFunc = None
+    
+    # use if there is a header packet
     headerInfo: tuple[int, type] = (12, PacketHeader)
     packetIDAttribute: str = 'mPacketType'
+    
+    # standard packet info
     packetInfo: dict[int, tuple[tuple[int, type], ...]] = {
         0: ((559, TelemetryData),),
         1: ((308, RaceData),),

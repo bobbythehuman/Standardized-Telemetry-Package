@@ -126,10 +126,6 @@ def startHandShake(socket, destination: tuple[int, int]):
     prepHandShake = bytes(handShakeMSG)
     
     socket.sendto(prepHandShake, destination)
-    
-    # data, _ = socket.recvfrom(1500)
-    
-    # packet = handshackerResponse.from_buffer_copy(data[0:408])
         
     handShakeMSG = handshaker(operationID = 1)
     prepHandShake = bytes(handShakeMSG)
@@ -157,7 +153,7 @@ class MetaData:
     fullBufferSize: int = 1500
     
     # use if a heartbeat is needed
-    heartBearPort = None
+    heartBeatPort = None
     heartBeatFunc = None
     
     # use for itinial hand shake
