@@ -1,0 +1,13 @@
+if hosting on xbox:
+    do ip and port as normal
+
+if hosting from microsoft store/ xbox pc:
+    set ip to 127.0.0.1 in game
+    in cmd add exception; 'CheckNetIsolation.exe LoopbackExempt -a'
+    FH5 - '-n=microsoft.624F8B84B80_8wekyb3d8bbwe'
+    FH4 - '-n=Microsoft.SunriseBaseGame_8wekyb3d8bbwe'
+
+    FM8 - '-n=Microsoft.ForzaMotorsport_8wekyb3d8bbwe'
+    FM7 - '-n=microsoft.apollobasegame_8wekyb3d8bbwe'
+    check wireshark:
+        loop back traffic capture

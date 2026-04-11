@@ -97,7 +97,7 @@ class telemetryManager:
             self.readOnlyStorage = ReadOnlyStorage(self.activeStorage)
         self.unpackMetaData()
 
-    def updateIP(self, ip: str):
+    def updateLocalIP(self, ip: str):
         self.IP = ip
 
     def updateSendIP(self, ip: str):

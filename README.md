@@ -1,36 +1,47 @@
 # Standardized-Telemetry-Package
 
-A single telemetry package that can extract UDP data from most racing games including: <br>
-F1 2024, BeamNG Drive, Project Cars 2, Forza Horizon 5, Forza Motorsport 8, and Gran Turismo 7.
+A single telemetry package that can extract UDP data from multiple racing games including: <br>
+F1 2024, BeamNG Drive, Project Cars 2, Forza Horizon 4, Forza Horizon 5, Forza Motorsport 7, Forza Motorsport 8, Gran Turismo 7, and Assetto Corsa.
 
 ## Features
 
-- Unified interface for multiple racing game telemetry protocols
+- Unified package for multiple racing game telemetry protocols
 - Support for both single-threaded and multi-threaded operation modes
 - Extensible packet structure system for adding new games
 - Real-time UDP data reception and decoding
 - Thread-safe data storage for concurrent access
 
+## Architecture
+
+The multi-threaded system uses the following architecture:
+
+- **Main Thread**: Creates and manages the telemetry system, starts worker threads, waits for stop signal
+- **Network Listener Thread**: Continuously receives UDP packets, decodes them according to the game protocol, and stores the latest data in `CentralStorage`
+- **Worker Threads**: User-defined threads that access telemetry data via read-only snapshots, preventing accidental data mutation
+
+Data is stored in `CentralStorage` with thread-safe locking mechanisms. Worker threads receive a `ReadOnlyStorage` interface that only allows taking immutable snapshots, ensuring thread safety without requiring manual locking.
+
 ## Options
 
-### Single-Threaded Mode (`get_telemetry` function)
+### Single-Threaded Mode
 
 The single-threaded mode provides a simple, blocking function that listens for UDP packets and returns decoded telemetry data. This is suitable for applications that don't require concurrent processing or real-time worker threads.
 
-Located in `main/support/server.py`, the `get_telemetry()` function:
+Located in `main/support/server.py`, the `telemetryManager.get_telemetry()` function:
 - Blocks until a packet is received
 - Decodes the packet according to the game's protocol
 - Returns the processed telemetry data
 - No threading overhead, simpler for basic usage
 
-### Multi-Threaded Mode (`multiThreadedTelemetry` class)
+### Multi-Threaded Mode
 
 The multi-threaded mode runs a full telemetry server with separate threads for network listening and data processing. This allows for real-time data processing while continuously receiving new packets.
 
-Located in `main/support/server.py`, the `multiThreadedTelemetry` class:
+Located in `main/support/server.py`, the `telemetryManager.StartTelemetry()` class:
 - Starts a network listener thread that continuously receives UDP data
-- Provides a central storage system for thread-safe data access
-- Allows multiple worker threads to process data concurrently
+- Provides a thread-safe central storage system (`CentralStorage`) for data
+- Allows multiple worker threads to process data concurrently via read-only access
+- Manages thread lifecycle with proper startup and shutdown procedures
 
 ## Setup
 
@@ -48,12 +59,15 @@ See `test_programs` for more single thread examples.
 
 ```python
 from data_structures.f1_2024_struct import MetaData
-from support.server import get_telemetry
+from support.server import telemetryManager
 
-# Pass Meta data into the function
-for packet, packetID, headerPacket in get_telemetry(MetaData):
-    # Get packet name
-    packetName = packet.__name__
+telemetry = telemetryManager()
+# telemetry.isMultiThreaded(False) # currently does nothing
+telemetry.updateMeta(MetaData)
+
+for packet, packetID, headerPacket in telemetry.get_telemetry():
+    if not packet:
+        continue
 
     # Check packetID, if available
     if packetID == 6:
@@ -71,21 +85,33 @@ See `test_programs` for more multi thread examples.
 
 ```python
 from data_structures.f1_2024_struct import MetaData
-from support.server import multiThreadedTelemetry
+from support.server import telemetryManager
+
+# Define a worker thread function
+def my_worker_thread(worker_id: int, ro_storage, stop_event):
+    while not stop_event.is_set():
+        snapshot = ro_storage.snapshot()
+        
+        # Access telemetry data
+        data = snapshot.get("lastestData")
+        if data:
+            telemetry = data.get("PacketCarTelemetryData")
+            if telemetry:
+                # Process data here
+                pass
 
 # Initialize the class
-activeThreads = multiThreadedTelemetry()
-# Add the Metadata
+activeThreads = telemetryManager()
+
+# Configure metadata and network settings
 activeThreads.updateMeta(MetaData)
-# Add the IP of the PS5, only needed for Gran Turismo 7
-activeThreads.updateSendIP(sourceIP)
-# Add the worker Threads
-activeThreads.addWorkerThread(displaySpeed)
-activeThreads.addWorkerThread(displayGear)
-# Start network listener and worker threads
-# Wait until stop event has been triggered
+
+activeThreads.updateLocalIP("127.0.0.1") # Optional. Defaults to 0.0.0.0
+# activeThreads.updateSendIP("192.168.1.100")  # Optional: for heartbeat destination
+
+activeThreads.addWorkerThread(my_worker_thread)
+
 activeThreads.StartTelemetry()
-# Program end
 ```
 
 
@@ -166,9 +192,11 @@ In your main script, import the new metadata:
 | ----------------- | ----------------- | ------------|
 | port              | Integer           | UDP port data is received on
 | fullBufferSize    | Integer           | Maximum packet size
-| destinationPort   | Integer           | UDP port to send a heart beat to
+| heartBeatPort     | Integer           | UDP port to send a heart beat to
 | heartBeatFunc     | Function          | Heart beat function
-| decrytionFunc     | Function          | Data decryption function 
+| handShakePort     | Integer           | UDP port to send a hand shake to
+| handShakeFunc     | Tuple [Function, Function] | Tuple containing start and stop hand shake functions
+| decrytionFunc     | Function          | Data decryption function
 | headerInfo        | Tuple [int, type] | Tuple containing, the packet size and header struct class (if protocol uses header).
 | packetIDAttribute | String            | An attribute in the header packet defining the packet ID
 | packetInfo        | Dict [int, List [Same as headerInfo] ]    | Game packet mapping - See more below
@@ -211,16 +239,26 @@ packetInfo = {
 ``` python
 # MetaData class with packet information
 class MetaData:
+    # standard network info
     port: int = 20777  # UDP port for your game
     fullBufferSize: int = 1464  # Maximum packet size
 
-    destinationPort = 33739
+    # use if a heartbeat is needed
+    heartBeatPort = 33739
     heartBeatFunc = heartBeat
+
+    # use for itinial hand shake
+    handShakePort = None
+    handShakeFunc = None # tuple (startHandShakeFunc, stopHandShakeFunc)
+
+    # use if the data needs decrypting
     decrytionFunc = decrypt_data
 
+    # use if there is a header packet
     headerInfo: tuple[int, type] = (32, PacketHeader)  # Header size and type
     packetIDAttribute: str = "m_packetId"  # Attribute name for packet ID
 
+    # standard packet info
     packetInfo: dict[int, tuple[tuple[int, type], ...]] = {
         0: ((1349, PacketMotionData),),  # Packet ID: ((size, packet_class),)
         # Add more packet types as needed
@@ -229,19 +267,24 @@ class MetaData:
 
 ### Step 3: Import and Use
 
-In your main script, import the new metadata:
+In your main script, import the new metadata and use it with either mode:
 
 ```python
 from data_structures.your_game_struct import MetaData as YourGameMetaData
+from support.server import telemetryManager
+
+## Setup for both modes
+activeThreads = telemetryManager()
+activeThreads.updateMeta(YourGameMetaData)
 
 ## Use in single-threaded mode
-for packet, packetID, headerPacket in get_telemetry(YourGameMetaData):
-    pass
+for packet, packetID, headerPacket in telemetry.get_telemetry():
+    if not packet:
+        continue
 
 ## Or in multi-threaded mode
-activeThreads = multiThreadedTelemetry()
-# Add the Metadata
-activeThreads.updateMeta(YourGameMetaData)
+activeThreads.addWorkerThread(your_worker_function)
+activeThreads.StartTelemetry()
 ```
 
 ### Step 4: Handle Packet Decoding
@@ -253,12 +296,15 @@ The system automatically handles packet decoding based on the `packetInfo` dicti
 
 ## Supported Games
 
-- F1 2024
+- Assetto Corsa
 - BeamNG Drive
-- Project Cars 2
+- F1 2024
+- Forza Horizon 4
 - Forza Horizon 5
+- Forza Motorsport 7 (untested)
 - Forza Motorsport 8
 - Gran Turismo 7
+- Project Cars 2
 
 ## Troubleshooting
 
@@ -267,3 +313,11 @@ The system automatically handles packet decoding based on the `packetInfo` dicti
 - Verify IP addresses are correctly configured for network communication
 - Use packet capture tools to verify data transmission (wireshark, and filter based on UDP, port, incoming and source IP)
 - Ensure firewall allows UDP traffic on the configured port
+- For Microsoft Store versions of Forza games, ensure loopback is configured correctly (see `forza debug.txt` in supporting docs)
+
+## Support Documentation
+
+Additional documentation and debugging guides are available in the `Supporting Docs/` folder:
+
+- **Data Output from F1 24 v27.2x.docx** - Detailed analysis of packet structures and data output for F1 2024 version 27.2x (official release)
+- **forza debug.txt** - Debugging setup for Forza games including local loopback configuration for Microsoft Store versions
