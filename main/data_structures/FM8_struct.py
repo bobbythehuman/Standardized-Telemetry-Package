@@ -62,7 +62,7 @@ class SledData(DataTypes.STRUCTURE.value):
         ("WheelOnRumbleStripFrontLeft",     DataTypes.SIGNED_INT32.value),
         ("WheelOnRumbleStripFrontRight",    DataTypes.SIGNED_INT32.value),
         ("WheelOnRumbleStripRearLeft",      DataTypes.SIGNED_INT32.value),
-        ("heelOnRumbleStripRearRight",      DataTypes.SIGNED_INT32.value),
+        ("WheelOnRumbleStripRearRight",     DataTypes.SIGNED_INT32.value),
         # from 0 to 1, where 1 is the deepest puddle
         ("WheelInPuddleDepthFrontLeft",     DataTypes.FLOAT.value),
         ("WheelInPuddleDepthFrontRight",    DataTypes.FLOAT.value),
