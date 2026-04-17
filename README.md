@@ -1,4 +1,4 @@
-# Standardized-Telemetry-Package
+# Race-Telemetry-Package
 
 A single telemetry package that can extract UDP data from multiple racing games including: <br>
 F1 2024, BeamNG Drive, Project Cars 2, Forza Horizon 4, Forza Horizon 5, Forza Motorsport 7, Forza Motorsport 8, Gran Turismo 7, and Assetto Corsa.
