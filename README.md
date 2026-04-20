@@ -1,7 +1,7 @@
 # Race-Telemetry-Package
 
 A single telemetry package that can extract UDP data from multiple racing games including: <br>
-F1 2024, BeamNG Drive, Project Cars 2, Forza Horizon 4, Forza Horizon 5, Forza Motorsport 7, Forza Motorsport 8, Gran Turismo 7, and Assetto Corsa.
+F1 2020 to F1 2025, BeamNG Drive, Project Cars 2, Forza Horizon 4, Forza Horizon 5, Forza Motorsport 7, Forza Motorsport 8, Gran Turismo 7, and Assetto Corsa.
 
 ## Features
 
@@ -324,6 +324,7 @@ The system automatically handles packet decoding based on the `packetInfo` dicti
 
 Additional documentation and debugging guides are available in the `Supporting Docs/` folder:
 
+- **F1 2020 Telemetry Packet Specification.mhtml** - Downloaded web page of [F1 2020 Telemetry Packet Specification](https://f1-2020-telemetry.readthedocs.io/en/stable/telemetry-specification.html)
 - **Data Output from F1 2021 Link.txt** - Link to [raweceek-telemetry/f1-2021-udp](https://github.com/raweceek-temeletry/f1-2021-udp?tab=readme-ov-file#data-output-from-f1-2021)
 - **Data Output from F1 22 v16.docx** - Detailed analysis of packet structures and data output for F1 2022 version 16 (official release)
 - **Data Output from F1 23 v29x3.docx** - Detailed analysis of packet structures and data output for F1 2023 version 29x3 (official release)
