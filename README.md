@@ -298,6 +298,7 @@ The system automatically handles packet decoding based on the `packetInfo` dicti
 
 - Assetto Corsa
 - BeamNG Drive
+- F1 2023 (untested)
 - F1 2024
 - Forza Horizon 4
 - Forza Horizon 5
