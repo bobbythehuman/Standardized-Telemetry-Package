@@ -324,6 +324,11 @@ The system automatically handles packet decoding based on the `packetInfo` dicti
 
 Additional documentation and debugging guides are available in the `Supporting Docs/` folder:
 
+- **Older F1 games** - Web Archive link to [F1 2016 D-Box and UDP Telemetry Information](https://web.archive.org/web/20180302011401/http://forums.codemasters.com/discussion/46726/d-box-and-udp-telemetry-information)
+- **Older F1 games** - Web Archive link to [F1 2017 D-Box and UDP Output Specification](https://web.archive.org/web/20230208144303/https://forums.codemasters.com/topic/20215-f1-2017-d-box-and-udp-output-specification/)
+- **Older F1 games** - Web Archive link to [F1 2018 UDP Specification](https://web.archive.org/web/20230208110311/https://forums.codemasters.com/topic/30601-f1-2018-udp-specification/)
+- **Older F1 games** - Web Archive link to [F1 2019 UDP Specification](https://web.archive.org/web/20220930165800/https://forums.codemasters.com/topic/44592-f1-2019-udp-specification/)
+- **Older F1 games** - Web Archive link to [F1 2020 UDP Specification](https://web.archive.org/web/20221127112921/https://forums.codemasters.com/topic/50942-f1-2020-udp-specification/)
 - **F1 2020 Telemetry Packet Specification.mhtml** - Downloaded web page of [F1 2020 Telemetry Packet Specification](https://f1-2020-telemetry.readthedocs.io/en/stable/telemetry-specification.html)
 - **Data Output from F1 2021 Link.txt** - Link to [raweceek-telemetry/f1-2021-udp](https://github.com/raweceek-temeletry/f1-2021-udp?tab=readme-ov-file#data-output-from-f1-2021)
 - **Data Output from F1 22 v16.docx** - Detailed analysis of packet structures and data output for F1 2022 version 16 (official release)
