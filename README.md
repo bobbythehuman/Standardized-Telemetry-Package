@@ -302,6 +302,7 @@ The system automatically handles packet decoding based on the `packetInfo` dicti
 
 - Assetto Corsa
 - BeamNG Drive
+- F1 2017 (untested)
 - F1 2018 (untested)
 - F1 2019 (untested)
 - F1 2020 (untested)
